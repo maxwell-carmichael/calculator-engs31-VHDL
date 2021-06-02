@@ -41,7 +41,11 @@ port (  clk: in  STD_LOGIC;                             --10MHz clock
         RsRx: in  STD_LOGIC;                            --received bit stream
         -- rx_shift : out STD_LOGIC;                       --for testing
         rx_data : out  STD_LOGIC_VECTOR (7 downto 0);   --data byte
-        rx_done_tick : out  STD_LOGIC );                --data ready tick
+        rx_done_tick : out  STD_LOGIC;                  --data ready tick
+        rx_isnumber :   out STD_LOGIC;
+        rx_isreturn :   out STD_LOGIC;
+        rx_isoper   :   out STD_LOGIC;
+        rx_isequals :   out STD_LOGIC );      
 end component; 
 
 --=============================================================
@@ -53,6 +57,10 @@ signal RsRx : STD_LOGIC := '1';
 -- signal rx_shift : STD_LOGIC := '0';
 signal rx_data  : STD_LOGIC_VECTOR (7 downto 0);
 signal rx_done_tick : STD_LOGIC := '0';
+signal rx_isnumber : STD_LOGIC := '0';
+signal rx_isreturn : STD_LOGIC := '0';
+signal rx_isoper   : STD_LOGIC := '0';
+signal rx_isequals : STD_LOGIC := '0';
 
 constant clk_period : time := 100ns;
 constant baud_rate  : time := 104167ns;
@@ -67,7 +75,11 @@ uut: Calculator_SCI port map(
     clk => clk, 
     RsRx => RsRx,
     rx_data => rx_data,
-    rx_done_tick => rx_done_tick );
+    rx_done_tick => rx_done_tick,
+    rx_isnumber => rx_isnumber,
+    rx_isreturn => rx_isreturn,
+    rx_isoper => rx_isoper,
+    rx_isequals => rx_isequals );
 
 --=============================================================
 --100 MHz clock declaration:
@@ -90,7 +102,7 @@ begin
     -- start
     RsRx <= '0';
     wait for baud_rate;
-    -- eight 10101010
+    -- ASCII '5': 00110101
     RsRx <= '1';
     wait for baud_rate;
     RsRx <= '0';
@@ -101,9 +113,9 @@ begin
     wait for baud_rate;
     RsRx <= '1';
     wait for baud_rate;
-    RsRx <= '0';
-    wait for baud_rate;
     RsRx <= '1';
+    wait for baud_rate;
+    RsRx <= '0';
     wait for baud_rate;
     RsRx <= '0';
     wait for baud_rate;
@@ -118,22 +130,22 @@ begin
     -- start
     RsRx <= '0';
     wait for baud_rate;
-    -- eight
+    -- ASCII '+': 00101011
     RsRx <= '1';
     wait for baud_rate;
     RsRx <= '1';
     wait for baud_rate;
-    RsRx <= '1';
+    RsRx <= '0';
     wait for baud_rate;
     RsRx <= '1';
     wait for baud_rate;
-    RsRx <= '1';
+    RsRx <= '0';
     wait for baud_rate;
     RsRx <= '1';
     wait for baud_rate;
-    RsRx <= '1';
+    RsRx <= '0';
     wait for baud_rate;
-    RsRx <= '1';
+    RsRx <= '0';
     wait for baud_rate;
     -- finish
     RsRx <= '1';
@@ -142,12 +154,36 @@ begin
     -- start
     RsRx <= '0';
     wait for baud_rate;
-    -- eight
+    -- ASCII 'RETURN': 00001101
+    RsRx <= '1';
+    wait for baud_rate;
+    RsRx <= '0';
+    wait for baud_rate;
     RsRx <= '1';
     wait for baud_rate;
     RsRx <= '1';
     wait for baud_rate;
     RsRx <= '0';
+    wait for baud_rate;
+    RsRx <= '0';
+    wait for baud_rate;
+    RsRx <= '0';
+    wait for baud_rate;
+    RsRx <= '0';
+    wait for baud_rate;
+    -- finish
+    RsRx <= '1';
+    wait for baud_rate;
+
+    -- start
+    RsRx <= '0';
+    wait for baud_rate;
+    -- ASCII 'U': 01010101
+    RsRx <= '1';
+    wait for baud_rate;
+    RsRx <= '0';
+    wait for baud_rate;
+    RsRx <= '1';
     wait for baud_rate;
     RsRx <= '0';
     wait for baud_rate;

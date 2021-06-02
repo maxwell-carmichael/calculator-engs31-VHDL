@@ -25,9 +25,14 @@ use IEEE.NUMERIC_STD.ALL;
 entity Calculator_SCI is
     Port (  clk: in  STD_LOGIC;                             --10MHz clock
             RsRx: in  STD_LOGIC;                            --received bit stream
-            -- rx_shift : out STD_LOGIC;                       --for testing
             rx_data : out  STD_LOGIC_VECTOR (7 downto 0);   --data byte
-            rx_done_tick : out  STD_LOGIC );                --data ready tick
+            rx_done_tick : out  STD_LOGIC;                  --data ready tick
+
+            -- data multiplexer outputs
+            rx_isnumber :   out STD_LOGIC;
+            rx_isreturn :   out STD_LOGIC;
+            rx_isoper   :   out STD_LOGIC;
+            rx_isequals :   out STD_LOGIC );                
 end Calculator_SCI;
 
 architecture Behavioral of Calculator_SCI is
@@ -208,6 +213,40 @@ begin
 
     rx_data <= data_reg;
 end process parallel_reg_8b;
+
+
+
+----------------------------
+-- rx asynchronous multiplexer
+----------------------------
+rx_data_multiplexer: process(data_reg)
+begin
+    rx_isnumber <= '0';
+    rx_isreturn <= '0';
+    rx_isoper   <= '0';
+    rx_isequals <= '0';
+
+    case data_reg is 
+        when "00110000" => rx_isnumber  <= '1'; -- 0
+        when "00110001" => rx_isnumber  <= '1'; -- 1
+        when "00110010" => rx_isnumber  <= '1'; -- 2
+        when "00110011" => rx_isnumber  <= '1'; -- 3
+        when "00110100" => rx_isnumber  <= '1'; -- 4
+        when "00110101" => rx_isnumber  <= '1'; -- 5
+        when "00110110" => rx_isnumber  <= '1'; -- 6
+        when "00110111" => rx_isnumber  <= '1'; -- 7
+        when "00111000" => rx_isnumber  <= '1'; -- 8
+        when "00111001" => rx_isnumber  <= '1'; -- 9
+        when "00001101" => rx_isreturn  <= '1'; -- RETURN
+        when "00101011" => rx_isoper    <= '1'; -- +
+        when "00101101" => rx_isoper    <= '1'; -- -
+        when "00101010" => rx_isoper    <= '1'; -- *
+        when "00111101" => rx_isequals  <= '1'; -- =
+        when others     =>
+
+    end case;
+end process rx_data_multiplexer;
+
 
 
 end Behavioral;
