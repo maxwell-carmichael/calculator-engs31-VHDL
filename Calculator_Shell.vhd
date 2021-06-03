@@ -1,3 +1,182 @@
+----------------------------------------------------------------------------------
+-- Company: ENGS031/COSC056
+-- Engineer: Max Carmichael and Alex Carney
+-- 
+-- Create Date: 05/13/2021 09:52:28 PM
+-- Design Name: 
+-- Module Name: Calculator_Shell - Structural
+-- Project Name: 
+-- Target Devices: 
+-- Tool Versions: Vivado 2018.3.1
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+-- 
+----------------------------------------------------------------------------------
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.numeric_std.all;
+
+library UNISIM;					-- needed for the BUFG component
+use UNISIM.Vcomponents.ALL;
+
+entity Calculator_Shell is
+    Port ( clk : in  STD_LOGIC;					-- 100 MHz board clock
+           RsRx  : in  STD_LOGIC 
+           
+    --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    --7 Segment Display
+    --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        seg	: out STD_LOGIC_vector(0 to 6);
+        dp  : out STD_LOGIC;
+        an 	: out STD_LOGIC_vector(3 downto 0) );				-- Rx input
+end Calculator_Shell;
+
+-- This is the eventual version with transmitter included
+--entity Calculator_Shell is
+--    Port ( Clk : in  STD_LOGIC;
+--           RsRx  : in  STD_LOGIC;
+--			 RsTx  : in  STD_LOGIC );
+--end Calculator_Shell;
+
+architecture Structural of Calculator_Shell is
+
+-- Signals for the 100 MHz to 10 MHz clock divider
+constant CLOCK_DIVIDER_VALUE: integer := 5;
+signal clkdiv: integer := 0;			-- the clock divider counter
+signal clk_en: STD_LOGIC := '0';		-- terminal count
+signal clk10: STD_LOGIC;				-- 10 MHz clock signal
+
+-- Signals for Calculator_SCI
+signal rx_data : STD_LOGIC_vector(7 downto 0);
+signal rx_done_tick : STD_LOGIC;
+signal rx_isnumber  : STD_LOGIC;
+signal rx_isreturn  : STD_LOGIC;
+signal rx_isoper    : STD_LOGIC;
+signal rx_isequals  : STD_LOGIC;
+
+-- Signals for
+
+-- Signals for 
+
+-- Signals for 7 segment display
+-- signal to_mux7seg_y3 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+-- signal to_mux7seg_y2 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+-- signal to_mux7seg_y1 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+-- signal to_mux7seg_y0 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+
+
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--Calculator_SCI
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+COMPONENT Calculator_SCI
+	PORT(
+		Clk         : IN STD_LOGIC;
+		RsRx        : IN STD_LOGIC;      
+		rx_data     :  out STD_LOGIC_vector(7 downto 0);
+		rx_done_tick : out STD_LOGIC;
+        
+        rx_isnumber :   out STD_LOGIC;
+        rx_isreturn :   out STD_LOGIC;
+        rx_isoper   :   out STD_LOGIC;
+        rx_isequals :   out STD_LOGIC );  
+	END COMPONENT;
+
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--7 Segment Display
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+component mux7seg is
+    Port ( 	clk : in  STD_LOGIC;
+           	y0, y1, y2, y3 : in  STD_LOGIC_VECTOR (3 downto 0);	
+           	dp_set : in STD_LOGIC_vector(3 downto 0);					
+           	seg : out  STD_LOGIC_VECTOR (0 to 6);	
+          	dp : out STD_LOGIC;
+           	an : out  STD_LOGIC_VECTOR (3 downto 0) );			
+end component;
+
+-------------------------
+BEGIN
+
+-- Clock buffer for 10 MHz clock
+-- The BUFG component puts the slow clock onto the FPGA clocking network
+Slow_clock_buffer: BUFG
+      port map (I => clk_en,
+                O => clk10 );
+
+-- Divide the 100 MHz clock down to 20 MHz, then toggling the 
+-- clk_en signal at 20 MHz gives a 10 MHz clock with 50% duty cycle
+Clock_divider: process(clk)
+begin
+	if rising_edge(clk) then
+	   	if clkdiv = CLOCK_DIVIDER_VALUE-1 then 
+	   		clk_en <= NOT(clk_en);		
+			clkdiv <= 0;
+		else
+			clkdiv <= clkdiv + 1;
+		end if;
+	end if;
+end process Clock_divider;
+
+------------------------------
+-- PORT MAPS
+------------------------------
+-- Calculator_SCI port map
+Receiver : Calculator_SCI PORT MAP(
+    Clk => clk10,				-- receiver is clocked with 10 MHz clock
+    RsRx => RsRx,
+    rx_data => rx_data,
+    rx_done_tick => rx_done_tick,
+    rx_isnumber => rx_isnumber,
+    rx_isreturn => rx_isreturn,
+    rx_isoper => rx_isoper,
+    rx_isequals => rx_isequals );
+
+--7-Segment Display Port Map
+display: mux7seg port map( 
+    clk => clk10,				-- runs on the 10 MHz clock
+    y3 => to_mux7seg_y3, 		        
+    y2 => to_mux7seg_y2,	
+    y1 => to_mux7seg_y1, 		
+    y0 => to_mux7seg_y0,		
+    dp_set => "0000",           -- decimal points off
+    seg => seg,
+    dp => dp,
+    an => an );
+
+
+end Structural;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------
 --=============================================================
 --Library Declarations
 --=============================================================
@@ -16,22 +195,22 @@ port (
     --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     --Timing
     --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        mclk		: in std_logic;	    -- FPGA board master clock (100 MHz)
-        mode        : in std_logic;
+        mclk		: in STD_LOGIC;	    -- FPGA board master clock (100 MHz)
+        mode        : in STD_LOGIC;
     --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     --SPI BUS
     --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        spi_sclk : out std_logic;
-        take_sample_LA : out std_logic;
-        spi_cs : out std_logic;
-        spi_s_data : in std_logic;
+        spi_sclk : out STD_LOGIC;
+        take_sample_LA : out STD_LOGIC;
+        spi_cs : out STD_LOGIC;
+        spi_s_data : in STD_LOGIC;
 
     --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     --7 Segment Display
     --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        seg	: out std_logic_vector(0 to 6);
-        dp    : out std_logic;
-        an 	: out std_logic_vector(3 downto 0) );  
+        seg	: out STD_LOGIC_vector(0 to 6);
+        dp    : out STD_LOGIC;
+        an 	: out STD_LOGIC_vector(3 downto 0) );  
 end Calculator_Shell; 
 
 --=============================================================
@@ -42,11 +221,11 @@ architecture Behavioral of Calculator_Shell is
 --Controller
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 component lab4_controller is
-	port(clk			:in std_logic;
-    	 take_sample 	:in std_logic;
-		 shift_en		:out std_logic;
-		 load_en		:out std_logic;
-		 spi_cs			:out std_logic
+	port(clk			:in STD_LOGIC;
+    	 take_sample 	:in STD_LOGIC;
+		 shift_en		:out STD_LOGIC;
+		 load_en		:out STD_LOGIC;
+		 spi_cs			:out STD_LOGIC
 		 );
 end component;
          
@@ -54,11 +233,11 @@ end component;
 --Datapath
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 component shift_register_12b is
-	port(	clk			:in std_logic;
-			shift_en 	:in std_logic;
-			load_en		:in std_logic;
-			spi_s_data	:in std_logic;
-			adc_data		:out std_logic_vector(11 downto 0)
+	port(	clk			:in STD_LOGIC;
+			shift_en 	:in STD_LOGIC;
+			load_en		:in STD_LOGIC;
+			spi_s_data	:in STD_LOGIC;
+			adc_data		:out STD_LOGIC_vector(11 downto 0)
 			);
 end component;
 
@@ -68,9 +247,9 @@ end component;
 component mux7seg is
     Port ( 	clk : in  STD_LOGIC;
            	y0, y1, y2, y3 : in  STD_LOGIC_VECTOR (3 downto 0);	
-           	dp_set : in std_logic_vector(3 downto 0);					
+           	dp_set : in STD_LOGIC_vector(3 downto 0);					
            	seg : out  STD_LOGIC_VECTOR (0 to 6);	
-          	dp : out std_logic;
+          	dp : out STD_LOGIC;
            	an : out  STD_LOGIC_VECTOR (3 downto 0) );			
 end component;
 
@@ -97,29 +276,29 @@ END COMPONENT;
 constant sclk_tc: integer := 100 / 2; 
 constant sclk_count_length: integer := integer(ceil( log2( real(sclk_tc) ) ));
 signal sclk_count: unsigned(sclk_count_length-1 downto 0) := (others => '0');
-signal sclk_tog: std_logic := '0';                      
-signal sclk: std_logic := '0';
+signal sclk_tog: STD_LOGIC := '0';                      
+signal sclk: STD_LOGIC := '0';
 
 --10 HZ TAKE SAMPLE
 --Signals for the 10 Hz tick generator, take_sample:
 constant take_sample_tc: integer := 100000; 
 constant take_sample_count_length: integer := integer(ceil( log2( real(take_sample_tc) ) ));
 signal take_sample_count: unsigned(take_sample_count_length-1 downto 0) := (others => '0');    
-signal take_sample: std_logic := '0';                      
+signal take_sample: STD_LOGIC := '0';                      
 
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 --Intermediate Signals:
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
-signal shift_en: std_logic := '0';
-signal load_en: std_logic := '0';
-signal adc_data: std_logic_vector(11 downto 0) := (others => '0');	-- A/D output
-signal douta: std_logic_vector(15 downto 0) := (others => '0');	-- A/D output
-signal to_mux7seg_y3 : std_logic_vector(3 downto 0) := (others => '0');
-signal to_mux7seg_y2 : std_logic_vector(3 downto 0) := (others => '0');
-signal to_mux7seg_y1 : std_logic_vector(3 downto 0) := (others => '0');
-signal to_mux7seg_y0 : std_logic_vector(3 downto 0) := (others => '0');
-signal measured_voltage : std_logic_vector(15 downto 0) := (others => '0');
-signal ian : std_logic_vector(3 downto 0) := (others => '1'); 
+signal shift_en: STD_LOGIC := '0';
+signal load_en: STD_LOGIC := '0';
+signal adc_data: STD_LOGIC_vector(11 downto 0) := (others => '0');	-- A/D output
+signal douta: STD_LOGIC_vector(15 downto 0) := (others => '0');	-- A/D output
+signal to_mux7seg_y3 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+signal to_mux7seg_y2 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+signal to_mux7seg_y1 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+signal to_mux7seg_y0 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+signal measured_voltage : STD_LOGIC_vector(15 downto 0) := (others => '0');
+signal ian : STD_LOGIC_vector(3 downto 0) := (others => '1'); 
 
 begin
 --=============================================================
@@ -166,21 +345,21 @@ port map (
 	S => '0' -- 1-bit set input
 );
 
---+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
---10 Hz take sample tick (high for 1 sclk cycle) generation 
---+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-take_sample_gen : process(sclk)
-begin
-	if rising_edge(sclk) then
-	   	if take_sample_count = take_sample_tc-1 then 
-	   	    take_sample <= '1';
-			take_sample_count <= (others => '0');
-		else
-            take_sample <= '0';
-			take_sample_count <= take_sample_count + 1;
-		end if;
-	end if;
-end process take_sample_gen;
+-- --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- --10 Hz take sample tick (high for 1 sclk cycle) generation 
+-- --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- take_sample_gen : process(sclk)
+-- begin
+-- 	if rising_edge(sclk) then
+-- 	   	if take_sample_count = take_sample_tc-1 then 
+-- 	   	    take_sample <= '1';
+-- 			take_sample_count <= (others => '0');
+-- 		else
+--             take_sample <= '0';
+-- 			take_sample_count <= take_sample_count + 1;
+-- 		end if;
+-- 	end if;
+-- end process take_sample_gen;
 
 --=============================================================
 --Port Maps:
