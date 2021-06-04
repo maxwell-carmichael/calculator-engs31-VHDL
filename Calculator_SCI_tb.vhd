@@ -5,7 +5,7 @@
 -- Create Date: 05/13/2021 07:51:11 PM
 -- Design Name: 
 -- Module Name: Calculator_SCI_tb - testbench
--- Project Name: Lab 4
+-- Project Name: Final Project
 -- Target Devices: 
 -- Tool Versions: Vivado 2018.3.1
 -- Description: 
@@ -63,7 +63,7 @@ signal rx_isoper   : STD_LOGIC := '0';
 signal rx_isequals : STD_LOGIC := '0';
 
 constant clk_period : time := 100ns;
-constant baud_rate  : time := 104167ns;
+constant bit_time  : time := 104167ns;
 
 BEGIN 
 
@@ -101,103 +101,103 @@ begin
     wait for 10*clk_period;
     -- start
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- ASCII '5': 00110101
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- finish
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
 
     -- wait for some time
-    wait for 2*baud_rate;
+    wait for 2*bit_time;
     wait for 50*clk_period;
 
     -- start
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- ASCII '+': 00101011
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- finish
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     
     -- start
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- ASCII 'RETURN': 00001101
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- finish
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
 
     -- start
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- ASCII 'U': 01010101
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     RsRx <= '0';
-    wait for baud_rate;
+    wait for bit_time;
     -- finish
     RsRx <= '1';
-    wait for baud_rate;
+    wait for bit_time;
     wait;
 
 end process;
