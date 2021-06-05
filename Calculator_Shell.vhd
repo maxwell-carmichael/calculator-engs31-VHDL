@@ -56,10 +56,10 @@ signal conv_Clear  :   STD_LOGIC   := '0';
 signal conv_Data_out         :   STD_LOGIC_VECTOR(31 downto 0)  :=  (others => '0');
 
 -- Signals for Calculator
-signal conv_Data_in         :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+-- signal conv_Data_in         :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
 signal conv_Data_ready      :   STD_LOGIC := '0';
-signal calc_out             :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
-signal small_calc_out       :   STD_LOGIC_VECTOR(13 downto 0) := (others => '0');
+signal disp             :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+signal small_disp       :   STD_LOGIC_VECTOR(13 downto 0) := (others => '0');
 
 
 -- Signals for 7 segment display
@@ -108,7 +108,7 @@ PORT (	clk 				 	: 	in 	STD_LOGIC;
         
         rx_isreturn, rx_isoper, rx_isequals :	in	std_logic;
         
-        Calc_out				: 	out std_logic_vector(31 downto 0)
+        disp				: 	out std_logic_vector(31 downto 0)
         
         );
 end COMPONENT;
@@ -195,12 +195,12 @@ Calc : Calculator PORT MAP(
     rx_isreturn => rx_isreturn,
     rx_isoper => rx_isoper,
     rx_isequals => rx_isequals,
-    Calc_out => Calc_out );
+    disp => disp );
 
 
 
 --7-Segment Display Port Map
-small_calc_out <= calc_out(13 downto 0);
+small_disp <= disp(13 downto 0);
 
 display: mux7seg port map( 
     clk => clk10,				-- runs on the 10 MHz clock
@@ -218,7 +218,7 @@ to_bcd : blk_mem_gen_0
 PORT MAP (
   clka => clk10,
   ena => '1',
-  addra => small_calc_out,
+  addra => small_disp,
   douta => calc_display);
 
 
