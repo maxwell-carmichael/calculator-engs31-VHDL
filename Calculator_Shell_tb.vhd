@@ -187,155 +187,83 @@ begin
     RsRx <= '1';
     wait for bit_time;
 
-    -- +
-    RsRx <= '0';
-    wait for bit_time;
+    -- -- +
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_plus(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_plus(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
 
-    -- RETURN
-    RsRx <= '0';
-    wait for bit_time;
+    -- -- RETURN
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_return(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_return(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
 
-    -- 7375
-    RsRx <= '0';
-    wait for bit_time;
+    -- -- 7375
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_7(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_7(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
-    RsRx <= '0';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_3(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_3(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
-    RsRx <= '0';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_7(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_7(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
-    RsRx <= '0';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_5(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_5(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
 
-    -- RETURN
-    RsRx <= '0';
-    wait for bit_time;
+    -- -- RETURN
+    -- RsRx <= '0';
+    -- wait for bit_time;
 
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_return(bitcount);
-        wait for bit_time;
-    end loop;
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_return(bitcount);
+    --     wait for bit_time;
+    -- end loop;
 
-    RsRx <= '1';
-    wait for bit_time;
-
-    -- =
-    RsRx <= '0';
-    wait for bit_time;
-
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_equals(bitcount);
-        wait for bit_time;
-    end loop;
-
-    RsRx <= '1';
-    wait for bit_time;
-
-    -- RETURN
-    RsRx <= '0';
-    wait for bit_time;
-
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_return(bitcount);
-        wait for bit_time;
-    end loop;
-
-    RsRx <= '1';
-    wait for bit_time;
-
-    -- -
-    RsRx <= '0';
-    wait for bit_time;
-
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_minus(bitcount);
-        wait for bit_time;
-    end loop;
-
-    RsRx <= '1';
-    wait for bit_time;
-
-    -- RETURN
-    RsRx <= '0';
-    wait for bit_time;
-
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_return(bitcount);
-        wait for bit_time;
-    end loop;
-
-    RsRx <= '1';
-    wait for bit_time;
-
-    -- 3
-    RsRx <= '0';
-    wait for bit_time;
-
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_3(bitcount);
-        wait for bit_time;
-    end loop;
-
-    RsRx <= '1';
-    wait for bit_time;
-
-    -- RETURN
-    RsRx <= '0';
-    wait for bit_time;
-
-    for bitcount in 0 to 7 loop
-        RsRx <= ascii_return(bitcount);
-        wait for bit_time;
-    end loop;
-
-    RsRx <= '1';
-    wait for bit_time;
+    -- RsRx <= '1';
+    -- wait for bit_time;
 
     -- =
     RsRx <= '0';
@@ -360,6 +288,78 @@ begin
 
     RsRx <= '1';
     wait for bit_time;
+
+    -- -- -
+    -- RsRx <= '0';
+    -- wait for bit_time;
+
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_minus(bitcount);
+    --     wait for bit_time;
+    -- end loop;
+
+    -- RsRx <= '1';
+    -- wait for bit_time;
+
+    -- -- RETURN
+    -- RsRx <= '0';
+    -- wait for bit_time;
+
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_return(bitcount);
+    --     wait for bit_time;
+    -- end loop;
+
+    -- RsRx <= '1';
+    -- wait for bit_time;
+
+    -- -- 3
+    -- RsRx <= '0';
+    -- wait for bit_time;
+
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_3(bitcount);
+    --     wait for bit_time;
+    -- end loop;
+
+    -- RsRx <= '1';
+    -- wait for bit_time;
+
+    -- -- RETURN
+    -- RsRx <= '0';
+    -- wait for bit_time;
+
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_return(bitcount);
+    --     wait for bit_time;
+    -- end loop;
+
+    -- RsRx <= '1';
+    -- wait for bit_time;
+
+    -- -- =
+    -- RsRx <= '0';
+    -- wait for bit_time;
+
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_equals(bitcount);
+    --     wait for bit_time;
+    -- end loop;
+
+    -- RsRx <= '1';
+    -- wait for bit_time;
+
+    -- -- RETURN
+    -- RsRx <= '0';
+    -- wait for bit_time;
+
+    -- for bitcount in 0 to 7 loop
+    --     RsRx <= ascii_return(bitcount);
+    --     wait for bit_time;
+    -- end loop;
+
+    -- RsRx <= '1';
+    -- wait for bit_time;
 
     wait;
 

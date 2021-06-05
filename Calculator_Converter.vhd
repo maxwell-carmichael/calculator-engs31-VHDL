@@ -185,11 +185,11 @@ if rising_edge(clk) then
    
     --write PUSH function 
     if(push_en = '1') then
-    
-        --IF unsigned(Data_in) < 48 OR unsigned(Data_in) > 57
-    
-        stack_reg(S_ADDR) <= Data_in; --push the new data on the stack 
-        S_ADDR <= S_ADDR + 1; --due to how stacks work, we only need 1 pointer
+
+        if(unsigned(Data_in) >= 48 AND unsigned(Data_in) <= 57) then 
+            stack_reg(S_ADDR) <= Data_in; --push the new data on the stack 
+            S_ADDR <= S_ADDR + 1; --due to how stacks work, we only need 1 pointer end if; 
+        end if;
     
     end if;
     
