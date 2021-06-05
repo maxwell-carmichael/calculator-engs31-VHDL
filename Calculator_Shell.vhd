@@ -27,7 +27,7 @@ use UNISIM.Vcomponents.ALL;
 
 entity Calculator_Shell is
     Port (  clk     : in  STD_LOGIC;					-- 100 MHz board clock
-            RsRx    : in  STD_LOGIC                     -- Rx input
+            RsRx    : in  STD_LOGIC;                    -- Rx input
     --7 Segment Display
             seg	: out STD_LOGIC_vector(0 to 6);
             dp  : out STD_LOGIC;
@@ -51,15 +51,19 @@ signal rx_isreturn  : STD_LOGIC;
 signal rx_isoper    : STD_LOGIC;
 signal rx_isequals  : STD_LOGIC;
 
--- Signals for
+-- Signals for Converter
+signal conv_Clear  :   STD_LOGIC   := '0';
+signal conv_Data_out         :   STD_LOGIC_VECTOR(31 downto 0)  :=  (others => '0');
 
--- Signals for 
+-- Signals for Calculator
+signal conv_Data_in         :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+signal conv_Data_ready      :   STD_LOGIC := '0';
+signal calc_out             :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+signal small_calc_out       :   STD_LOGIC_VECTOR(13 downto 0) := (others => '0');
+
 
 -- Signals for 7 segment display
--- signal to_mux7seg_y3 : STD_LOGIC_vector(3 downto 0) := (others => '0');
--- signal to_mux7seg_y2 : STD_LOGIC_vector(3 downto 0) := (others => '0');
--- signal to_mux7seg_y1 : STD_LOGIC_vector(3 downto 0) := (others => '0');
--- signal to_mux7seg_y0 : STD_LOGIC_vector(3 downto 0) := (others => '0');
+signal calc_display     : STD_LOGIC_VECTOR(15 downto 0) := (others => '0');
 
 
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -79,6 +83,37 @@ COMPONENT Calculator_SCI
 	END COMPONENT;
 
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--Calculator_Converter
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+COMPONENT Converter is
+    Port ( 
+            clk, Push, Clear 	    : 	in 	STD_LOGIC;
+            Data_in					:	in	std_logic_vector(7 downto 0) := (others => '0');
+            Data_ready              :   out std_logic;
+            Data_out				:	out	std_logic_vector(31 downto 0) := (others => '0')
+    );
+    END COMPONENT;
+
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--Calculator_Calculator
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+COMPONENT Calculator IS
+PORT (	clk 				 	: 	in 	STD_LOGIC;
+		
+        rx_Data_in				:	in std_logic_vector(7 downto 0) := (others => '0');
+        rx_Data_ready			:	in std_logic; 
+        
+        conv_Data_in			:	in	std_logic_vector(31 downto 0) := (others => '0');
+		conv_Data_ready			:	in	std_logic;
+        
+        rx_isreturn, rx_isoper, rx_isequals :	in	std_logic;
+        
+        Calc_out				: 	out std_logic_vector(31 downto 0)
+        
+        );
+end COMPONENT;
+
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 --7 Segment Display
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 component mux7seg is
@@ -89,6 +124,19 @@ component mux7seg is
           	dp : out STD_LOGIC;
            	an : out  STD_LOGIC_VECTOR (3 downto 0) );			
 end component;
+
+
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- number to bcd
+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+COMPONENT blk_mem_gen_0
+  PORT (
+    clka : IN STD_LOGIC;
+    ena : IN STD_LOGIC;
+    addra : IN STD_LOGIC_VECTOR(13 downto 0);
+    douta : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+  );
+END COMPONENT;
 
 -------------------------
 BEGIN
@@ -127,21 +175,54 @@ Receiver : Calculator_SCI PORT MAP(
     rx_isoper => rx_isoper,
     rx_isequals => rx_isequals );
 
+-- Converter port map
+Stack : Converter PORT MAP ( 
+    clk => clk10,
+    Push => rx_done_tick,
+    Clear => conv_Clear,
+    Data_in => rx_data,
+    Data_ready => conv_Data_ready,
+    Data_out => conv_Data_out );
+
+
+-- Calculator port map
+Calc : Calculator PORT MAP(
+    clk => clk10,
+    rx_Data_in => rx_data,
+    rx_Data_ready => rx_done_tick,
+    conv_Data_in => conv_Data_out,
+    conv_Data_ready => conv_Data_ready,
+    rx_isreturn => rx_isreturn,
+    rx_isoper => rx_isoper,
+    rx_isequals => rx_isequals,
+    Calc_out => Calc_out );
+
+
+
 --7-Segment Display Port Map
+small_calc_out <= calc_out(13 downto 0);
+
 display: mux7seg port map( 
     clk => clk10,				-- runs on the 10 MHz clock
-    y3 => to_mux7seg_y3, 		        
-    y2 => to_mux7seg_y2,	
-    y1 => to_mux7seg_y1, 		
-    y0 => to_mux7seg_y0,		
+    y3 => calc_display(15 downto 12), 		        
+    y2 => calc_display(11 downto 8),	
+    y1 => calc_display(7 downto 4), 		
+    y0 => calc_display(3 downto 0),		
     dp_set => "0000",           -- decimal points off
     seg => seg,
     dp => dp,
     an => an );
 
+-- Block memory Port Map   
+to_bcd : blk_mem_gen_0
+PORT MAP (
+  clka => clk10,
+  ena => '1',
+  addra => small_calc_out,
+  douta => calc_display);
+
 
 end Structural;
-
 
 
 

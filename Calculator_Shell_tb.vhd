@@ -126,7 +126,7 @@ begin
     wait for bit_time;
 
     -- wait for some time
-    wait for 2*baud_rate;
+    wait for 2*bit_time;
     wait for 50*clk_period;
 
     -- *
@@ -135,6 +135,18 @@ begin
 
     for bitcount in 0 to 7 loop
         RsRx <= ascii_times(bitcount);
+        wait for bit_time;
+    end loop;
+
+    RsRx <= '1';
+    wait for bit_time;
+
+    -- RETURN
+    RsRx <= '0';
+    wait for bit_time;
+
+    for bitcount in 0 to 7 loop
+        RsRx <= ascii_return(bitcount);
         wait for bit_time;
     end loop;
 
