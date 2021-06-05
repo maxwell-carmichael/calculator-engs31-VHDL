@@ -41,18 +41,19 @@ PORT (	clk 				 	: 	in 	STD_LOGIC;
         
         rx_isreturn, rx_isoper, rx_isequals :	in	std_logic;
         
-        Calc_out				: 	out std_logic_vector(31 downto 0)
+        disp				: 	out std_logic_vector(31 downto 0)
         
         );
 end Calculator;
 architecture behavior of Calculator is
 
 --FSM states
-type state_type is (Idle, StoreOne, StoreOp, StoreTwo, Calc);
+type state_type is (Idle, StoreOne, StoreOp, StoreTwo, Calc, WaitForOp, WaitForNum, WaitForEquals, ReuseOp);
 signal current_state, next_state : state_type;
 
 --Control signals 
-signal reg1_en, regOp_en, reg2_en, calc_en, calc_out_en, calc_clr	:	std_logic := '0';
+signal reg1_en, regOp_en, reg2_en, calc_en, calc_clr, muxDisp_en, reg1_ow	:	std_logic := '0';
+signal disp_en : std_logic_vector(1 downto 0) := (others => '0');
 
 --Registers
 signal Reg1 : std_logic_vector(31 downto 0) := (others => '0');
@@ -60,6 +61,7 @@ signal Reg2 : std_logic_vector(31 downto 0) := (others => '0');
 signal RegOp : std_logic_vector(7 downto 0) := (others => '0');
 
 signal CalcReg : std_logic_vector(31 downto 0) := (others => '0');
+signal DispReg : std_logic_vector(31 downto 0) := (others => '0');
 
 --other signals (playground only)
 signal state_bin : std_logic_vector(3 downto 0) := (others => '0');
@@ -86,8 +88,10 @@ reg1_en <= '0';
 regOp_en <= '0';
 reg2_en <= '0';
 calc_en <= '0';
-calc_out_en <= '0';
+disp_en <= "00";
+muxDisp_en <= '0';
 calc_clr <= '0';
+reg1_ow <= '0';
 
 --default state
 next_state <= current_state;
@@ -106,16 +110,27 @@ case (current_state) is
     when StoreOne => 
     	state_bin <= "0001";
         reg1_en <= '1';
+    --    disp_en <= "01";
         
+        next_state <= WaitForOp; 
+		
+    when WaitForOp =>
+        disp_en <= "01";
         --operations come directly from the SCI receiver 
         if(rx_data_ready = '1' and rx_isoper = '1') then
         	next_state <= StoreOp;
 		end if;
+		
         
     when StoreOp =>
     	state_bin <= "0010";
         regOp_en <= '1';
+ --       disp_en <= "01";
         
+        next_state <= WaitForNum; 
+    
+    when WaitForNum =>
+        disp_en <= "01";
         if(conv_data_ready = '1') then
         	next_state <= StoreTwo;
         end if; 
@@ -123,23 +138,33 @@ case (current_state) is
     when StoreTwo => 
     	state_bin <= "0100";
         reg2_en <= '1';
+        next_state <= WaitForEquals;
         
-        if(rx_data_ready = '1' and rx_isequals = '1') then
+        
+    when WaitForEquals =>
+        disp_en <= "10";  
+                
+        if(rx_data_ready = '1' and rx_isequals = '1') then     
         	next_state <= Calc;
-        end if; 
+        end if;   
         
         
     when Calc => 
     	state_bin <= "0011"; 
         calc_en <= '1';
-        calc_out_en <= '1';
+        disp_en <= "11";
         
         
-        if(rx_data_ready = '1' and rx_isreturn = '1') then
+        if(rx_data_ready = '1' and rx_isequals = '1') then
         	next_state <= Idle;
         elsif(rx_data_ready = '1' and rx_isoper = '1') then
-        	next_state <= StoreOp;
+        	next_state <= ReuseOp;
         end if;
+        
+    when ReuseOp =>
+        reg1_ow <= '1';
+        next_state <= WaitForOp;     
+        
 end case;
 
 end process nextStateLogic; 
@@ -148,7 +173,7 @@ end process nextStateLogic;
 --Datapath
 ----------------------------------
 
-Datapath: process(clk, reg1_en, regOp_en, reg2_en, calc_en, RegOp, Reg1, Reg2, calc_out_en, CalcReg) 
+Datapath: process(clk, reg1_en, regOp_en, reg2_en, calc_en, RegOp, Reg1, Reg2, disp_en, CalcReg) 
 begin
 
 --clocked components
@@ -156,6 +181,8 @@ if rising_edge(clk) then
 	--Register 1
     if(reg1_en = '1') then
     	Reg1 <= conv_Data_in;
+    elsif(reg1_ow = '1') then
+        Reg1 <= CalcReg; 		
     end if;
     
     --Register Op
@@ -169,11 +196,18 @@ if rising_edge(clk) then
     end if;
     
     --Output register
-    if(calc_out_en = '1') then
-        calc_out <= CalcReg;
+    if(disp_en = "01") then
+        disp <= Reg1;
+    elsif(disp_en = "10") then
+        disp <= Reg2;
+    elsif(disp_en = "11") then
+        disp <= CalcReg;    
     elsif calc_clr = '1' then
-        CalcReg <= (others => '0');       
+        CalcReg <= (others => '0');    
     end if;
+    
+    
+    --disp <= DispReg;
     
 end if; --end clocked component
 
