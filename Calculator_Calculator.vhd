@@ -8,7 +8,8 @@
 -- Project Name: Digital Calculator  
 -- Target Devices: Basys 3
 -- Tool Versions: 
--- Description: Proves the calculation functionality for the Digital Calculator 
+-- Description: Provides the master controller for the Digital Calculator, along with the datapath components necessary
+--              to perform calculations on numbers that are stored as std_logic_vectors in the internal registers. 
 -- 
 -- Dependencies: Digital Calculator input module 
 -- 
@@ -21,57 +22,56 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 ENTITY Calculator IS
 PORT (	clk 				 	: 	in 	STD_LOGIC;
 		
+		--communication with the SCI receiver 
         rx_Data_in				:	in std_logic_vector(7 downto 0) := (others => '0');
         rx_Data_ready			:	in std_logic; 
         
+        rx_isreturn             :   in std_logic;
+        rx_isoper               :   in std_logic;
+        rx_isequals             :   in std_logic;
+        rx_isclear              :   in std_logic;
+        
+        --communication with the Stack converter 
         conv_Data_in			:	in	std_logic_vector(31 downto 0) := (others => '0');
 		conv_Data_ready			:	in	std_logic;
+        conv_en                 :   out std_logic;
         
-        rx_isreturn, rx_isoper, rx_isequals, rx_isclear :	in	std_logic;
-        
-        conv_en             :   out std_logic;
-        disp				: 	out std_logic_vector(31 downto 0) := (others => '0')
+        --communication to shell and LED display 
+        disp				    : 	out std_logic_vector(31 downto 0) := (others => '0')
         
         );
 end Calculator;
 architecture behavior of Calculator is
 
 --FSM states
-type state_type is (Idle, StoreOne, StoreOp, StoreTwo, Calc, WaitForOp, WaitForNum, WaitForEquals, ReuseOp, Clear, Chaining);
+type state_type is (Idle, StoreOne, StoreOp, StoreTwo, Calc, WaitForOp, WaitForNum, WaitForEquals, ReuseOp, Clear, Chaining, Overflow);
 
 signal current_state : state_type := Idle;
 signal next_state : state_type;
 
+--------------------
 --Control signals 
-signal reg1_en, regOp_en, reg2_en, calc_en, muxDisp_en, reg1_ow, ovrflw_en	:	std_logic := '0';
+--------------------
+
+--from FSM to datapath
+signal reg1_en, regOp_en, reg2_en, calc_en, ovrflw_en, reg1_ow	:	std_logic := '0';
+--from datapath to FSM
+signal ovrflw_detect    : std_logic := '0';
+--clear signals
 signal reg1_clr, regOp_clr, reg2_clr, calc_clr : std_logic := '0';
+--output reg signal 
 signal disp_en : std_logic_vector(2 downto 0) := (others => '0');
 
 --Registers
 signal Reg1 : std_logic_vector(31 downto 0) := (others => '0');
 signal Reg2 : std_logic_vector(31 downto 0) := (others => '0');
 signal RegOp : std_logic_vector(7 downto 0) := (others => '0');
-
 signal CalcReg : std_logic_vector(31 downto 0) := (others => '0');
-signal DispReg : std_logic_vector(31 downto 0) := (others => '0');
-
-
-
---other signals (playground only)
-signal state_bin : std_logic_vector(3 downto 0) := (others => '0');
-signal next_state_bin : std_logic_vector(3 downto 0) := (others => '0');
 
 begin
 
@@ -86,19 +86,19 @@ begin
     end if;
 end process stateUpdate;
 
-nextStateLogic: process(current_state, rx_Data_in, conv_Data_in, conv_Data_ready, rx_Data_ready, rx_isreturn, rx_isoper, rx_isequals, rx_isclear)
+nextStateLogic: process(current_state, rx_Data_in, conv_Data_in, conv_Data_ready, rx_Data_ready, rx_isreturn, rx_isoper, rx_isequals, rx_isclear, ovrflw_detect)
 begin
 
---default control signals
+--default enable signals
 reg1_en <= '0';
 regOp_en <= '0';
 reg2_en <= '0';
 calc_en <= '0';
 disp_en <= "000";
-muxDisp_en <= '0'; 
 reg1_ow <= '0'; --reg1_overwrite
 ovrflw_en <= '0';
 
+--default clear signals
 reg1_clr <= '0';
 reg2_clr <= '0';
 regOp_clr <= '0';
@@ -113,17 +113,14 @@ conv_en <= '0';
 case (current_state) is
 
 	when Idle => 
-    	state_bin <= "0000";
     	conv_en <= '1';
+    	
         if (conv_data_ready = '1') then
         	next_state <= StoreOne; 
 		end if;
             
     when StoreOne => 
-    	state_bin <= "0001";
         reg1_en <= '1';
-        
-    --    disp_en <= "01";
         
         if(rx_isreturn = '1') then
             next_state <= WaitForOp;
@@ -131,6 +128,7 @@ case (current_state) is
 		
     when WaitForOp =>
         disp_en <= "001";
+        
         --operations come directly from the SCI receiver
         if(rx_data_ready = '1' and rx_isclear = '1') then
             next_state <= Clear; 
@@ -140,13 +138,9 @@ case (current_state) is
 		
         
     when StoreOp =>
-    	state_bin <= "0010";
     	if(rx_isoper = '1') then
     	   regOp_en <= '1';
     	end if;
-        --regOp_en <= '1';
- --       disp_en <= "01";
- 
         if(rx_isreturn = '1') then
             next_state <= WaitForNum;
         end if;
@@ -154,6 +148,7 @@ case (current_state) is
     when WaitForNum =>
         disp_en <= "001";
         conv_en <= '1';
+        
         if(rx_data_ready = '1' and rx_isclear = '1') then
             next_state <= Clear; 
         end if;
@@ -162,7 +157,6 @@ case (current_state) is
         end if; 
         
     when StoreTwo => 
-    	state_bin <= "0100";
         reg2_en <= '1';
         
         if(rx_isreturn = '1') then
@@ -187,18 +181,32 @@ case (current_state) is
         next_state <= ReuseOp;    
         
     when Calc => 
-    	state_bin <= "0011"; 
         calc_en <= '1';
         disp_en <= "011";
+        ovrflw_en <= '1';
         
-         if(rx_data_ready = '1' and rx_isclear = '1') then
+        if(ovrflw_detect = '1') then
+           next_state <= Overflow; 
+        elsif(rx_data_ready = '1' and rx_isclear = '1') then
            next_state <= Clear;
          elsif(rx_data_ready = '1' and rx_isoper = '1') then
         	next_state <= ReuseOp;
         end if;
         
-    when Clear => 
         
+    when Overflow => 
+        reg1_clr <= '1';
+        reg2_clr <= '1';
+        regOp_clr <= '1';
+        calc_clr <= '1';
+        disp_en <= "101"; 
+        
+        if(rx_isreturn = '1') then
+            next_state <= Idle; 
+        end if;
+            
+        
+    when Clear =>       
         reg1_clr <= '1';
         reg2_clr <= '1';
         regOp_clr <= '1';
@@ -208,16 +216,10 @@ case (current_state) is
         if(rx_isreturn = '1') then
             next_state <= Idle; 
         end if;
-        
-  --     if(rx_data_ready = '1' and rx_isreturn = '1') then
-  --      	next_state <= Idle;
-  --      elsif(rx_data_ready = '1' and rx_isoper = '1') then
-  --      	next_state <= ReuseOp;
-  --      end if;
-        
+
     when ReuseOp =>
         reg1_ow <= '1';
-        --regOp_en <= '1';
+       
         next_state <= StoreOp;     
         
 end case;
@@ -228,12 +230,21 @@ end process nextStateLogic;
 --Datapath
 ----------------------------------
 
-Datapath: process(clk, reg1_en, calc_clr, regOp_en, reg2_en, calc_en, RegOp, Reg1, Reg2, disp_en, CalcReg, reg1_ow) 
+Datapath: process(clk, reg1_en, calc_clr, regOp_en, reg2_en, calc_en, RegOp, Reg1, Reg2, disp_en, CalcReg, reg1_ow, ovrflw_en) 
 begin
+
+--default control signals -- (ones set back to FSM) 
+ovrflw_detect <= '0';
 
 --clocked components
 if rising_edge(clk) then
-	--Register 1
+
+    ---------------------
+    --Registers
+    --------------------- 
+
+
+	--Register for 1st number
     if(reg1_ow = '1') then
         Reg1 <= CalcReg;
     elsif(reg1_en = '1') then
@@ -242,25 +253,26 @@ if rising_edge(clk) then
         Reg1 <= (others => '0');    		
     end if;
     
---    if(reg1_ow = '1') then
---        Reg1 <= CalcReg;
---    end if; 
-    
-    --Register Op
+    --Register for Operations
     if(regOp_en = '1') then
     	RegOp <= rx_Data_in;
     elsif(regOp_clr = '1') then
         RegOp <= (others => '0');
     end if;
     
-    --Register 2
+    --Register for 2nd number
     if(reg2_en = '1') then
     	Reg2 <= conv_Data_in;
     elsif(reg2_clr = '1') then
         Reg2 <= (others => '0');	
     end if;
     
-    --Output register
+    --Register for calculated values (more below) 
+    if(calc_clr = '1') then
+        CalcReg <= (others => '0');     
+    end if;
+    
+    --Output display register
     if(disp_en = "001") then
         disp <= Reg1;
     elsif(disp_en = "010") then
@@ -268,11 +280,11 @@ if rising_edge(clk) then
     elsif(disp_en = "011") then
         disp <= CalcReg;  
     elsif(disp_en = "100") then
-        disp <= (others => '0');         
+        disp <= (others => '0');
+    elsif(disp_en = "101") then
+        disp <= std_logic_vector( to_unsigned(9999, 32) );             
     end if;
-    
-    
-    --disp <= DispReg;
+
  --calculator
 if(calc_en = '1') then
 	case RegOp is
@@ -294,29 +306,18 @@ if(calc_en = '1') then
  
     end case;
     
-end if;
-    
-if calc_clr = '1' then
-   CalcReg <= (others => '0');     
-end if;
+end if; --end calculator 
    
-end if; --end clocked component
+end if; --end clocked components
 
 --async components
 
 --overflow comparator
 if(ovrflw_en = '1') then
-    if(unsigned(CalcReg) > to_unsigned("9999")) then
- --       CalcReg <= std_logic_vector("9999");
-          CalcReg <= std_logic_vector( to_unsigned("9999") );
+    if(unsigned(CalcReg) > to_unsigned(9999, 32)) then
+          ovrflw_detect <= '1';
     end if;
 end if;
-
-    
---if calc_clr = '1' then
- --  CalcReg <= (others => '0');  
---end if;   
-    
 
 end process Datapath;
         
