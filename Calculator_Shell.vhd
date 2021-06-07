@@ -50,15 +50,18 @@ signal rx_isnumber  : STD_LOGIC;
 signal rx_isreturn  : STD_LOGIC;
 signal rx_isoper    : STD_LOGIC;
 signal rx_isequals  : STD_LOGIC;
+signal rx_isclear   : STD_LOGIC;
 
 -- Signals for Converter
 signal conv_Clear  :   STD_LOGIC   := '0';
 signal conv_Data_out         :   STD_LOGIC_VECTOR(31 downto 0)  :=  (others => '0');
+signal Enable       :   std_logic := '0';
 
 -- Signals for Calculator
 -- signal conv_Data_in         :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
 signal conv_Data_ready      :   STD_LOGIC := '0';
 signal disp             :   STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+signal conv_en          :   std_logic := '0';
 signal small_disp       :   STD_LOGIC_VECTOR(13 downto 0) := (others => '0');
 
 
@@ -79,6 +82,7 @@ COMPONENT Calculator_SCI
         rx_isnumber :   out STD_LOGIC;
         rx_isreturn :   out STD_LOGIC;
         rx_isoper   :   out STD_LOGIC;
+        rx_isclear  :   out STD_LOGIC;
         rx_isequals :   out STD_LOGIC );  
 	END COMPONENT;
 
@@ -87,9 +91,10 @@ COMPONENT Calculator_SCI
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 COMPONENT Converter is
     Port ( 
-            clk, Push, Clear 	    : 	in 	STD_LOGIC;
+            clk, Push, Clear	    : 	in 	STD_LOGIC;
             Data_in					:	in	std_logic_vector(7 downto 0) := (others => '0');
             Data_ready              :   out std_logic;
+            Enable                  :   in  std_logic;
             Data_out				:	out	std_logic_vector(31 downto 0) := (others => '0')
     );
     END COMPONENT;
@@ -106,8 +111,10 @@ PORT (	clk 				 	: 	in 	STD_LOGIC;
         conv_Data_in			:	in	std_logic_vector(31 downto 0) := (others => '0');
 		conv_Data_ready			:	in	std_logic;
         
-        rx_isreturn, rx_isoper, rx_isequals :	in	std_logic;
+        rx_isreturn, rx_isoper, rx_isequals, rx_isclear :	in	std_logic;
         
+        
+        conv_en             :   out std_logic;
         disp				: 	out std_logic_vector(31 downto 0)
         
         );
@@ -129,7 +136,7 @@ end component;
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 -- number to bcd
 --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-COMPONENT blk_mem_gen_0
+COMPONENT blk_mem_gen_1
   PORT (
     clka : IN STD_LOGIC;
     ena : IN STD_LOGIC;
@@ -173,6 +180,7 @@ Receiver : Calculator_SCI PORT MAP(
     rx_isnumber => rx_isnumber,
     rx_isreturn => rx_isreturn,
     rx_isoper => rx_isoper,
+    rx_isclear => rx_isclear,
     rx_isequals => rx_isequals );
 
 -- Converter port map
@@ -182,7 +190,9 @@ Stack : Converter PORT MAP (
     Clear => conv_Clear,
     Data_in => rx_data,
     Data_ready => conv_Data_ready,
-    Data_out => conv_Data_out );
+    Data_out => conv_Data_out,
+    Enable => conv_en
+     );
 
 
 -- Calculator port map
@@ -195,7 +205,10 @@ Calc : Calculator PORT MAP(
     rx_isreturn => rx_isreturn,
     rx_isoper => rx_isoper,
     rx_isequals => rx_isequals,
-    disp => disp );
+    rx_isclear => rx_isclear,
+    disp => disp,
+    conv_en => conv_en
+     );
 
 
 
@@ -214,7 +227,7 @@ display: mux7seg port map(
     an => an );
 
 -- Block memory Port Map   
-to_bcd : blk_mem_gen_0
+to_bcd : blk_mem_gen_1
 PORT MAP (
   clka => clk10,
   ena => '1',
