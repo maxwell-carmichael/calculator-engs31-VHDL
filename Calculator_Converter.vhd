@@ -8,10 +8,11 @@
 -- Project Name: Digital Calculator  
 -- Target Devices: 
 -- Tool Versions: 
--- Description: 
 -- 
--- Dependencies: 
 -- 
+-- Description: Uses a Stack data structure to handle byte-sized inputs from the SCI receiver, converting said inputs into
+--              a single unsigned (or std_logic_vector) number. Enabled by the master controller
+-- Dependencies: Calculator_Calculator  
 -- Revision:
 -- Revision 0.01 - File Created
 -- Additional Comments:
@@ -21,15 +22,8 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity Converter is
 Port ( 
@@ -47,9 +41,16 @@ architecture Behavioral of Converter is
 type state_type is (Start, Reset, FullS, PushS, PopS, ClearS, Convert, Output);
 signal current_state, next_state : state_type;
 
+
+---------------------
 --Control signals
-signal push_en, pop_en, clear_en, full_sig, empty_sig, compCarr_en, popCount_en, acc_en,
-carriage_detect, count_clr, acc_clr, data_out_en:	std_logic := '0';
+---------------------
+--enable signals 
+signal push_en, pop_en, clear_en, data_out_en, compCarr_en, popCount_en, acc_en:    std_logic := '0';
+--clear signals 
+signal count_clr, acc_clr:  std_logic := '0';
+--internal control
+signal full_sig, empty_sig, carriage_detect:   std_logic := '0';
 
 --Registers
 type regfile is array(0 to 4) of std_logic_vector(7 downto 0);
@@ -81,13 +82,13 @@ begin
 push_en <= '0';
 pop_en <= '0';
 Clear_en <= '0';
-
 compCarr_en <= '0';
 popCount_en <= '0';
 acc_en <= '0';
+data_out_en <= '0';
+
 acc_clr <= '0';
 count_clr <= '0';
-data_out_en <= '0';
 
 --default state
 next_state <= current_state;
@@ -112,6 +113,7 @@ case (current_state) is
     when PushS =>       
         --make sure the input isn't a carriage return
         compCarr_en <= '1';    
+        
         if carriage_detect = '1' then
         	next_state <= PopS;
         elsif full_sig = '1' then
@@ -122,38 +124,41 @@ case (current_state) is
         end if;
     
     when PopS =>
-        next_state <= Convert;
-        
+        --continuously pop, counting the number of times we do so, accumulating each number, until it is empty
+    	pop_en <= '1';
+        popCount_en <= '1';
+    
+        next_state <= Convert;      
         if empty_sig = '1' then
         	next_state <= Output; 
         end if;
         
-        --continuously pop, counting the number of times we do so, accumulating each number, until it is empty
-    	pop_en <= '1';
-        popCount_en <= '1';
+
         
     when Convert =>
+        acc_en <= '1';
+        
         next_state <= PopS;
         if empty_sig = '1' then
         	next_state <= Output;
         end if;
-        acc_en <= '1';
-        
+
     when Output =>
-        next_state <= Reset;
-        data_out_en <= '1'; 
+        data_out_en <= '1';
+    
+        next_state <= Reset; 
      
     when Reset =>
-        
         data_ready <= '1';
-    
     	acc_clr <= '1';
         count_clr <= '1';
     	    	
         next_state <= Start; 
     
     when FullS =>
-        compCarr_en <= '1';    
+        compCarr_en <= '1';   
+        
+        --if the stack is full, we can only leave (not add any more) 
         if carriage_detect = '1' then
         	next_state <= PopS;
         else
@@ -162,6 +167,7 @@ case (current_state) is
     
     when ClearS =>
         Clear_en <= '1';
+        
         next_state <= Start;
         
 end case; 
@@ -192,19 +198,14 @@ if rising_edge(clk) then
    
     
     --POP function
-    if(pop_en = '1') then
-        
+    if(pop_en = '1') then      
         if(empty_sig = '0') then
             stack_reg(S_addr) <= (others => '0');
             S_addr <= S_addr - 1;
-        end if;
-        
-
-        
+        end if;   
     end if;
     
-    --data register
-    --clear function TODO
+    --clear stack register
     if(clear_en = '1') then
         stack_reg <= (others => (others => '0'));
         s_addr <= 0;
@@ -225,9 +226,7 @@ if rising_edge(clk) then
     end if;
     
     --accumulator
-    if(acc_en = '1') then
-    
-    
+    if(acc_en = '1') then 
         case (count_reg) is
             when "001" =>
                 accumulator_reg <= std_logic_vector(unsigned(accumulator_reg) + (unsigned(Data_reg) )); 	
@@ -251,11 +250,16 @@ end if; --end clock
 
 --async components (Read)
 Data_reg <= std_logic_vector( unsigned(stack_reg(S_addr)) - 48);
---Data_reg <= std_logic_vector( unsigned(stack_reg(S_addr)));
 
---async components (comparators)
+--comparators 
+--Empty detector 
 if(s_addr = 0) then
 	empty_sig <= '1';
+end if;
+
+--Full detector
+if(s_addr = 4) then
+	full_sig <= '1';
 end if;
 
 --carriage return detector
@@ -265,12 +269,7 @@ if(compCarr_en = '1') then
     end if;
 end if;
 
---Full detector
-if(s_addr = 4) then
-	full_sig <= '1';
-end if;
-    
-
+   
 end process Datapath; 
 
 
