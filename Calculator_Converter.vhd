@@ -33,8 +33,9 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity Converter is
 Port ( 
-        clk, Push, Clear 	: 	in 	STD_LOGIC;
+        clk, Push, Clear        : 	in 	STD_LOGIC;
 		Data_in					:	in	std_logic_vector(7 downto 0) := (others => '0');
+		Enable                  :   in std_logic;
 		Data_ready              :   out std_logic;
 		Data_out				:	out	std_logic_vector(31 downto 0) := (others => '0')
 );
@@ -55,7 +56,7 @@ type regfile is array(0 to 4) of std_logic_vector(7 downto 0);
 signal Stack_reg : regfile;
 signal accumulator_reg:  std_logic_vector (31 downto 0) := (others => '0');
 signal count_reg: unsigned(2 downto 0) := (others => '0'); --keep an internal register for our counter 
-signal Data_reg: std_logic_vector(7 downto 0) := (others => '0'); 
+signal Data_reg: std_logic_vector(7 downto 0); 
 
 --due to the nature of stacks, our read and write memory pointers point to the same address always
 signal S_ADDR : integer := 0;
@@ -73,7 +74,7 @@ begin
     end if;
 end process stateUpdate;
 
-nextStateLogic: process(current_state, Push, Clear, full_sig, empty_sig, carriage_detect)
+nextStateLogic: process(current_state, Push, Clear, full_sig, empty_sig, carriage_detect, Enable)
 begin
 
 --default control signals
@@ -102,7 +103,7 @@ case (current_state) is
 
         if Clear = '1' then
         	next_state <= ClearS;
-        elsif Push = '1' then
+        elsif (Push = '1' and Enable = '1') then
         	next_state <= PushS;
         else
         	next_state <= Start;
@@ -183,21 +184,22 @@ carriage_detect <= '0';
 --clocked components
 if rising_edge(clk) then
    
-    --write PUSH function 
+    --write PUSH function     
     if(push_en = '1') then
-
-        if(unsigned(Data_in) >= 48 AND unsigned(Data_in) <= 57) then 
-            stack_reg(S_ADDR) <= Data_in; --push the new data on the stack 
-            S_ADDR <= S_ADDR + 1; --due to how stacks work, we only need 1 pointer end if; 
-        end if;
-    
+            stack_reg(S_ADDR) <= Data_in;--push the new data on the stack 
+            S_ADDR <= S_ADDR + 1; --due to how stacks work, we only need 1 pointer 
     end if;
+   
     
     --POP function
     if(pop_en = '1') then
-     
-        stack_reg(S_addr) <= (others => '0');
-        S_addr <= S_addr - 1;
+        
+        if(empty_sig = '0') then
+            stack_reg(S_addr) <= (others => '0');
+            S_addr <= S_addr - 1;
+        end if;
+        
+
         
     end if;
     
@@ -243,11 +245,13 @@ if rising_edge(clk) then
         accumulator_reg <= (others => '0');
     end if;
     
+    
 
 end if; --end clock
 
 --async components (Read)
 Data_reg <= std_logic_vector( unsigned(stack_reg(S_addr)) - 48);
+--Data_reg <= std_logic_vector( unsigned(stack_reg(S_addr)));
 
 --async components (comparators)
 if(s_addr = 0) then
